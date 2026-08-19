@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: sample-prometheus-grafana-kafka
+  servlet:
+    multipart:
+      # Drop-copy files run to hundreds of MB; the default 1MB cap would reject them outright.
+      max-file-size: 2GB
+      max-request-size: 2GB
+      # Spill to disk almost immediately - the parser streams, so nothing needs to be held in memory.
+      file-size-threshold: 1MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+# ── Nayaga Watch client-hub ───────────────────────────────────────────────
+# The app reports itself to client-hub as an agent + MainApp, which is what
+# makes it show up on http://localhost:5300/client-apps. Auto-discovered apps
+# land as `unregistered` — an admin must Activate them before patch upload is
+# allowed. See WatchAgentClient for the wire protocol.
+watch:
+  client:
+    enabled: true
+    hub-url: ws://localhost:4010/agent/ws
+    # Must match ^[a-z0-9][a-z0-9._-]{0,63}$ and stay stable across releases.
+    app-id: sample-prometheus-grafana-kafka
+    app-name: Sample Prometheus Grafana Kafka
+    agent-version: embedded-1.0.0
+    # Empty = grace-mode register (works, shows as `unenrolled` in the fleet
+    # view). Paste a token from the Enrollment page to enroll properly; the
+    # credential the hub issues back is persisted to identity-file.
+    enroll-token: ""
+    # Hub flags an agent `long_down` after 300s of silence.
+    heartbeat-interval: 30s
+    identity-file: .watch/agent-identity.properties
+    location: ""
+    assigned-to: ""

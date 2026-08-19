@@ -1,0 +1,51 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.1.0'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.edi'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// Boot 4 splits JSON out of the web starter; the Watch agent builds its own
+	// SNAKE_CASE mapper to match the client-hub wire format.
+	implementation 'org.springframework.boot:spring-boot-starter-jackson'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+springBoot {
+	// Generates META-INF/build-info.properties so BuildProperties is available;
+	// the Watch agent reports that version as the MainApp's app_version.
+	buildInfo()
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	// Tests must not phone home to client-hub.
+	systemProperty 'watch.client.enabled', 'false'
+	// Forward -Ddropout.file=... to the test JVM so DropOutRowReaderBenchmark can find a real file.
+	systemProperty 'dropout.file', System.getProperty('dropout.file') ?: ''
+	testLogging {
+		showStandardStreams = System.getProperty('dropout.file') ? true : false
+	}
+}
+
+
+defaultTasks 'bootRun'
